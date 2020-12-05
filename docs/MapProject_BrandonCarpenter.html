@@ -1,0 +1,229 @@
+<! DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="initial-scale=1, maximum scale=1, user-scalable=no">
+        <title>Map Project</title>
+        <style>
+            html,body,#viewDiv{
+                padding:   0;
+                margin:    0;
+                height: 100%;
+                width:  100%;
+            }
+        </style>
+        <link rel="stylesheet" href="https://js.arcgis.com/4.17/esri/css/main.css">
+        <script src="https://js.arcgis.com/4.17/"></script>
+        
+        <script>
+            require([
+                "esri/config",
+                "esri/core/urlUtils",
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/Basemap",
+                "esri/layers/VectorTileLayer",
+                "esri/layers/FeatureLayer",
+                "esri/layers/CSVLayer",
+                "esri/symbols/SimpleFillSymbol",
+                "esri/renderers/SimpleRenderer",
+                "dojo/domReady!"
+            ], function(esriConfig, urlUtils, Map, MapView, Basemap, VectorTileLayer, FeatureLayer, CSVLayer, SimpleFillSymbol, SimpleRenderer){
+                
+                var myBasemap = new Basemap({
+                baseLayers:[
+                    new VectorTileLayer({
+                        portalItem:{
+                            id: "b5905a45caf547dabf569a8a417bed24"
+                            }
+                        })
+                    ]
+                });
+                
+                var myMap = new Map({
+                basemap:myBasemap
+                });
+                    
+                var myView = new MapView({
+                container: "viewDiv",
+                map: myMap,
+                center: [-81.853206, 39.768792],
+                scale: 1200000
+                    
+                });
+                
+                var ctSym = new SimpleFillSymbol({
+                    color: "#949494",
+                    style: "none",
+                    width: 2,
+                    outline:{
+                        style: "solid",
+                        color: "#949494"
+                    }
+                });
+                
+                var ctRenderer = new SimpleRenderer({
+                    symbol: ctSym 
+                });
+                
+                var counties = new FeatureLayer({
+                    url: "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2010/State_County/MapServer/9",
+                    definitionExpression: "STATE = 39",
+                    renderer: ctRenderer
+                    
+                });
+                
+                myMap.add(counties);
+                
+                var counties2 = new FeatureLayer({
+                    url: "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2010/State_County/MapServer/7",
+                    definitionExpression: "STATE = 39",
+                    renderer: ctRenderer
+                    
+                });
+                
+                myMap.add(counties2);
+                
+                var counties3 = new FeatureLayer({
+                    url: "https://tigerweb.geo.census.gov/arcgis/rest/services/Census2010/State_County/MapServer/5",
+                    definitionExpression: "STATE = 39",
+                    renderer: ctRenderer
+                    
+                });
+                
+                myMap.add(counties3);
+                
+                
+                var url =
+                    "https://www.dl.dropboxusercontent.com/s/4xh1nhk325e0x2z/datavariables.csv?dl=0"
+                
+                esriConfig.request.corsEnabledServers.push(url);
+                
+                var incomeTemplate = {
+                    title: "{county} Income",
+                    content: "HH Median Income: {hhmedianincome}"
+                };
+                
+                var income = new CSVLayer({
+                    url: url,
+                    copyright: "US Census",
+                    popupTemplate: incomeTemplate
+                });
+                
+                 income.renderer ={
+                    type: "simple",
+                    symbol:{
+                        type: "simple-marker",
+                        color: [38, 69, 1, 0.9],
+                        size: 25,
+                        outline:{
+                            width: 0.5,
+                            color: "white"
+                        }
+                    }
+                };
+              
+                
+                myMap.add(income);
+                
+                ////////////////////////////
+                
+                var snapTemplate = {
+                    title: "{county} SNAP",
+                    content: [{
+                        type: "fields",
+                        fieldInfos: [{
+                            fieldName: "hhsnapwithchildren",
+                            label: "SNAP households with children "
+                        },{
+                            fieldName: "hhsnapwithchildrenpercent",
+                            label: "Percent of SNAP households with children"
+                        }]
+                    }]
+                };
+                
+                var snap = new CSVLayer({
+                    url: url,
+                    copyright: "US Census",
+                    popupTemplate: snapTemplate
+                });
+                
+                 snap.renderer ={
+                    type: "simple",
+                    symbol:{
+                        type: "simple-marker",
+                        color: [78, 69, 1, 0.9],
+                        size: 10,
+                        outline:{
+                            width: 0.5,
+                            color: "white"
+                        }
+                    }
+                };
+              
+                
+                myMap.add(snap);
+                
+                //////////////////////////////
+                
+               function createSymbol(color){
+                    return{
+                        type: "simple-fill",
+                        color: color,
+                        outline:{
+                            width: 0.5,
+                            color: [255, 255, 255, 0.4],
+                        },
+                        style: "solid"
+                    };
+                }
+                
+                var renderer = {
+                    type: "class-breaks",
+                    field: "hhsnapwithchildrenpercent",
+                    classBreakInfos: [{
+                        minValue: 26.5,
+                        maxValue: 40,
+                        symbol: createSymbol("#fef0d9"),
+                        label: "0 - 0.5%"
+                    },{
+                        minValue: 40.7,
+                        maxValue: 42.3,
+                        symbol: createSymbol("#fdcc8a"),
+                        label: "0.59 - 1.38%"
+                    },{
+                        minValue: 42.4,
+                        maxValue: 44.1,
+                        symbol: createSymbol("#fc8d59"),
+                        label: "1.83 - 4.05%"
+                    },{
+                        minValue: 44.2,
+                        maxValue: 46.3,
+                        symbol: createSymbol("#e34a33"),
+                        label: "4.78 - 8.31%"
+                    },{
+                        minValue: 46.7,
+                        maxValue: 53.1,
+                        symbol: createSymbol("#b30000"),
+                        label: "8.32 - 26.3558%"
+                    }]
+                };
+                
+                
+                
+                var counties4 = new FeatureLayer({
+                    url: "https://www.dl.dropboxusercontent.com/s/4xh1nhk325e0x2z/datavariables.csv?dl=0",
+                    definitionExpression: "STATE = 39",
+                    renderer: renderer
+                });
+                
+                myMap.add(counties4);
+            })
+        </script>
+    </head>
+    <body>
+    
+        <div id="viewDiv"></div>
+    
+    </body>
+</html>
